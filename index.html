@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier de l'Avent — Défi de Noël (Rouen & Caen)</title>
+    <style>
+        /* =========================================================
+           1. VARIABLES & BASE ULTRA-LÉGÈRE (ZÉRO DÉPENDANCE EXTERNE)
+           ========================================================= */
+        :root {
+            --bg-top: #071126;
+            --bg-mid: #141a38;
+            --bg-bot: #1f0d1b;
+            --surface: rgba(15, 23, 46, 0.86);
+            --surface-solid: #101935;
+            --surface-soft: rgba(30, 41, 74, 0.72);
+            --border: rgba(255, 255, 255, 0.14);
+            --text: #f8fafc;
+            --muted: #cbd5e1;
+            --gold: #fbbf24;
+            --gold-deep: #d97706;
+            --red: #e11d48;
+            --green: #10b981;
+            --blue: #38bdf8;
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            min-height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at 18% 12%, rgba(225, 29, 72, 0.24), transparent 36%),
+                radial-gradient(circle at 82% 16%, rgba(16, 185, 129, 0.22), transparent 38%),
+                radial-gradient(circle at 50% 45%, rgba(251, 191, 36, 0.10), transparent 45%),
+                linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 58%, var(--bg-bot) 100%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* =========================================================
+           2. AMBIANCE FESTIVE : GUIRLANDE, FLOCONS CSS & DÉCOR SVG
+           ========================================================= */
+        .garland {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 22px;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            pointer-events: none;
+            z-index: 40;
+            border-top: 2px solid rgba(15, 23, 42, 0.8);
+        }
+        .bulb {
+            width: 10px;
+            height: 14px;
+            border-radius: 50% 50% 60% 60%;
+            margin-top: 2px;
+            opacity: 0.9;
+            animation: twinkle 2.4s ease-in-out infinite;
+        }
+        .bulb:nth-child(4n+1) { background: #fbbf24; box-shadow: 0 0 10px #fbbf24; animation-delay: 0s; }
+        .bulb:nth-child(4n+2) { background: #f43f5e; box-shadow: 0 0 10px #f43f5e; animation-delay: 0.6s; }
+        .bulb:nth-child(4n+3) { background: #34d399; box-shadow: 0 0 10px #34d399; animation-delay: 1.2s; }
+        .bulb:nth-child(4n+4) { background: #38bdf8; box-shadow: 0 0 10px #38bdf8; animation-delay: 1.8s; }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.45; transform: scale(0.92); }
+            50% { opacity: 1; transform: scale(1.08); }
+        }
+
+        /* Flocons ultra-légers en CSS pur */
+        .snow-layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .flake {
+            position: absolute;
+            top: -24px;
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 13px;
+            user-select: none;
+            animation: snowfall linear infinite;
+            will-change: transform;
+        }
+        @keyframes snowfall {
+            0%   { transform: translate3d(0, -10px, 0) rotate(0deg); opacity: 0; }
+            12%  { opacity: 0.8; }
+            88%  { opacity: 0.75; }
+            100% { transform: translate3d(26px, 105vh, 0) rotate(360deg); opacity: 0; }
+        }
+
+        /* Décor enneigé en arrière-plan (sapin illuminé + petit renard) */
+        .winter-scene {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 220px;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .winter-scene svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .star-glow {
+            animation: starPulse 2s ease-in-out infinite;
+            transform-origin: center;
+        }
+        @keyframes starPulse {
+            0%, 100% { opacity: 0.75; }
+            50% { opacity: 1; }
+        }
+
+        /* Confettis CSS lors des validations de points */
+        .confetti-box {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 90;
+            overflow: hidden;
+        }
+        .confetti-piece {
+            position: absolute;
+            top: -12px;
+            width: 9px;
+            height: 14px;
+            border-radius: 2px;
+            animation: confettiFall 2.2s ease-out forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(540deg); opacity: 0; }
+        }
+
+        /* =========================================================
+           3. LAYOUT PRINCIPAL & EN-TÊTE
+           ========================================================= */
+        .app {
+            position: relative;
+            z-index: 5;
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 28px 14px 130px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.34);
+            padding: 16px;
+        }
+
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .brand-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #dc2626, #f59e0b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.38);
+            flex-shrink: 0;
+        }
+        .brand h1 {
+            font-size: 1.25rem;
+            line-height: 1.2;
+            font-weight: 800;
+            color: #fff;
+        }
+        .brand-sub {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+        .pill-site {
+            display: inline-block;
+            background: rgba(56, 189, 248, 0.18);
+            color: #bae6fd;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        .header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+        .sync-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid var(--border);
+            font-size: 0.74rem;
+            color: var(--muted);
+        }
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--gold);
+        }
+        .sync-dot.ok { background: var(--green); }
+        .sync-dot.local { background: var(--blue); }
+
+        /* Boutons communs */
+        .btn {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: rgba(30, 41, 74, 0.9);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.82rem;
+            padding: 9px 14px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+        }
+        .btn:hover { background: rgba(51, 65, 105, 0.95); }
+        .btn:active { transform: scale(0.97); }
+        .btn-gold {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #111827;
+            border-color: #fde68a;
+        }
+        .btn-gold:hover { background: linear-gradient(135deg, #fbbf24, #fcd34d); }
+        .btn-green {
+            background: #059669;
+            border-color: #34d399;
+        }
+        .btn-green:hover { background: #10b981; }
+        .btn-red {
+            background: rgba(225, 29, 72, 0.2);
+            border-color: rgba(244, 63, 94, 0.55);
+            color: #fecdd3;
+        }
+        .btn-red:hover { background: rgba(225, 29, 72, 0.35); }
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 0.76rem;
+            border-radius: 9px;
+        }
+
+        /* =========================================================
+           4. PODIUM EN DIRECT (AVEC MEMBRES SOUS CHAQUE ÉQUIPE)
+           ========================================================= */
+        .section-title {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .section-title h2 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #fde68a;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-hint {
+            font-size: 0.76rem;
+            color: var(--muted);
+        }
+
+        .podium-stage {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            align-items: end;
+            padding-top: 8px;
+        }
+        .podium-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-width: 0;
+        }
+        .podium-head {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 8px;
+            width: 100%;
+            padding: 0 2px;
+        }
+        .podium-icon {
+            font-size: 1.85rem;
+            line-height: 1;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+        }
+        .podium-name {
+            font-size: 0.84rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+        .podium-members {
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            line-height: 1.3;
+            max-width: 100%;
+            word-break: break-word;
+            background: rgba(15, 23, 42, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 3px 7px;
+            margin-top: 2px;
+        }
+        .podium-members.empty {
+            font-style: italic;
+            color: #94a3b8;
+        }
+        .podium-step {
+            width: 100%;
+            border-radius: 14px 14px 8px 8px;
+            border: 1px solid var(--border);
+            border-top-width: 4px;
+            padding: 10px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: height 0.35s ease, transform 0.25s ease;
+        }
+        .podium-step.rank-1 {
+            min-height: 112px;
+            background: linear-gradient(180deg, rgba(251, 191, 36, 0.28), rgba(180, 83, 9, 0.16));
+            border-color: rgba(251, 191, 36, 0.55);
+            box-shadow: 0 8px 22px rgba(245, 158, 11, 0.22);
+        }
+        .podium-step.rank-2 {
+            min-height: 88px;
+            background: linear-gradient(180deg, rgba(148, 163, 184, 0.26), rgba(51, 65, 85, 0.18));
+            border-color: rgba(203, 213, 225, 0.45);
+        }
+        .podium-step.rank-3 {
+            min-height: 70px;
+            background: linear-gradient(180deg, rgba(217, 119, 6, 0.22), rgba(120, 53, 15, 0.18));
+            border-color: rgba(251, 146, 60, 0.42);
+        }
+        .podium-medal {
+            font-size: 1.45rem;
+            line-height: 1;
+        }
+        .podium-score {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #fde68a;
+        }
+        .podium-score span {
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        /* =========================================================
+           5. GRILLE DES 15 CASES & PORTES 3D DE CALENDRIER DE L'AVENT
+           ========================================================= */
+        .cal-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 0.74rem;
+        }
+        .tag {
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-weight: 700;
+            border: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.55);
+            color: var(--muted);
+        }
+        .tag-gold {
+            background: rgba(251, 191, 36, 0.18);
+            border-color: rgba(251, 191, 36, 0.55);
+            color: #fde68a;
+        }
+
+        .cal-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .door-wrap {
+            position: relative;
+            min-height: 136px;
+            perspective: 950px;
+            border-radius: 14px;
+            user-select: none;
+            z-index: 1;
+        }
+        .door-wrap.is-opening {
+            z-index: 12;
+        }
+        .door-wrap.clickable { cursor: pointer; }
+        .door-wrap.locked { cursor: not-allowed; }
+
+        /* Intérieur de la case (visible quand la porte s'ouvre) */
+        .door-inside {
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            background: radial-gradient(circle at center, rgba(251, 191, 36, 0.34), rgba(15, 23, 42, 0.96));
+            border: 1px solid rgba(251, 191, 36, 0.6);
+            box-shadow: inset 0 0 18px rgba(251, 191, 36, 0.25);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 8px;
+            text-align: center;
+            gap: 4px;
+        }
+        .door-wrap.is-opened .door-inside {
+            border-left: 4px solid rgba(251, 191, 36, 0.85);
+        }
+        @keyframes insideGlow {
+            0% { transform: scale(0.92); filter: brightness(0.9); }
+            55% { transform: scale(1.04); filter: brightness(1.35); box-shadow: inset 0 0 28px rgba(251, 191, 36, 0.65), 0 0 20px rgba(251, 191, 36, 0.4); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        .door-wrap.is-opening .door-inside {
+            animation: insideGlow 0.65s ease-out;
+        }
+        .door-inside-day {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #fde68a;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .door-inside-icon {
+            font-size: 1.55rem;
+        }
+        .door-inside-cta {
+            font-size: 0.7rem;
+            color: #e2e8f0;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.14);
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        /* Battant de porte 3D avec vrai recto & verso cartonné */
+        .door-flap {
+            position: relative;
+            width: 100%;
+            min-height: 136px;
+            height: 100%;
+            transform-origin: left center;
+            transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d;
+            transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+            z-index: 2;
+        }
+        .door-front,
+        .door-back {
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .door-front {
+            border: 2px dashed rgba(255, 255, 255, 0.28);
+            background: linear-gradient(155deg, rgba(30, 41, 82, 0.97), rgba(17, 24, 52, 0.97));
+            padding: 10px 9px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+        }
+        /* Encoche de porte sur le côté droit */
+        .door-front::after {
+            content: "";
+            position: absolute;
+            right: -2px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 22px;
+            border-radius: 6px 0 0 6px;
+            background: rgba(255, 255, 255, 0.24);
+        }
+        /* Verso du battant cartonné visible quand la porte s'ouvre */
+        .door-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 2px solid #d97706;
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.35rem;
+            box-shadow: inset 0 0 14px rgba(146, 64, 14, 0.28);
+        }
+
+        /* Vendredi POINTS x2 */
+        .door-wrap.friday .door-front {
+            background: linear-gradient(155deg, rgba(146, 64, 14, 0.94), rgba(69, 26, 3, 0.96));
+            border-color: rgba(251, 191, 36, 0.78);
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.26);
+        }
+        .door-wrap.locked .door-front {
+            opacity: 0.68;
+            filter: saturate(0.75);
+        }
+        /* Porte ouverte en 3D : pivote puis s'efface en douceur pour ne jamais chevaucher les cases voisines */
+        .door-wrap.is-opened .door-flap {
+            transform: rotateY(-102deg);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.26s ease 0.36s;
+        }
+
+        /* Secousse douce si case verrouillée */
+        @keyframes doorShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-3px); }
+        }
+        .door-wrap.shaking {
+            animation: doorShake 0.34s ease;
+        }
+
+        .door-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 4px;
+        }
+        .door-num {
+            font-size: 1.55rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #fff;
+        }
+        .door-date {
+            font-size: 0.67rem;
+            color: var(--muted);
+            font-weight: 600;
+            text-align: right;
+            line-height: 1.15;
+        }
+        .door-mid {
+            text-align: center;
+            margin: 6px 0;
+        }
+        .door-mystery {
+            font-size: 0.76rem;
+            font-weight: 700;
+         
