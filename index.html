@@ -1531,6 +1531,9 @@
             "Lun 14 Déc", "Mar 15 Déc", "Mer 16 Déc", "Jeu 17 Déc", "Ven 18 Déc"
         ];
 
+        // Disposition mélangée fixe (comme un vrai calendrier de l'Avent en chocolat)
+        const SHUFFLED_GRID_ORDER = [7, 14, 2, 11, 5, 13, 1, 9, 15, 4, 10, 3, 12, 6, 8];
+
         function defaultChallenges() {
             const base = [
                 { cat: "Énigme", prompt: "Quel mot commence par un E, finit par un E, et ne contient généralement qu'une seule lettre ?", answer: "Une enveloppe" },
@@ -1844,7 +1847,11 @@
             const grid = document.getElementById('calendar-grid');
             if (!grid) return;
 
-            grid.innerHTML = state.cases.map((c) => {
+            const orderedCases = SHUFFLED_GRID_ORDER
+                .map(day => state.cases[day - 1])
+                .filter(Boolean);
+
+            grid.innerHTML = orderedCases.map((c) => {
                 const subCount = Object.keys(c.submissions || {}).length;
                 const canOpen = c.unlocked || isOrg;
                 const isPermOpen = c.revealed;
