@@ -1978,22 +1978,23 @@
             if (c.revealed) {
                 openCaseModal(day);
                 return;
-        window.saveCaseEdits = async function() {
-            if (activeCaseDay === null) return;
-            const c = state.cases[activeCaseDay - 1];
-            c.category = document.getElementById('edit-cat').value.trim() || c.category;
-            c.prompt = document.getElementById('edit-prompt').value.trim() || c.prompt;
-            c.answer = document.getElementById('edit-answer').value.trim() || c.answer;
-            c.questionAudioLimit = Number(document.getElementById('edit-audio-limit').value) || 5;
-            c.answerAudioUrl = document.getElementById('edit-answer-audio-url').value.trim();
-            renderAll();
-            renderCaseModal(c.day);
-            await persistCase(c.day, true);
+            }
+
+            // Animation d'ouverture 3D du volet avant d'afficher la fenêtre du défi
+            openingDoorDay = day;
+            const doorEl = document.getElementById(`door-${day}`);
+            if (doorEl) {
+                doorEl.classList.add('is-opened', 'is-opening');
+            }
+            setTimeout(() => {
+                openCaseModal(day);
+            }, 460);
         };
 
         function openCaseModal(day) {
             activeCaseDay = day;
             document.getElementById('m-edit-panel').classList.add('hidden');
+            setEditSyncStatus('');
             renderCaseModal(day);
             document.getElementById('case-modal').classList.add('open');
         }
@@ -2423,7 +2424,7 @@
             }
         };
 
-        window.saveCaseEdits = function() {
+        window.saveCaseEdits = async function() {
             if (activeCaseDay === null) return;
             const c = state.cases[activeCaseDay - 1];
             c.category = document.getElementById('edit-cat').value.trim() || c.category;
@@ -2431,10 +2432,9 @@
             c.answer = document.getElementById('edit-answer').value.trim() || c.answer;
             c.questionAudioLimit = Number(document.getElementById('edit-audio-limit').value) || 5;
             c.answerAudioUrl = document.getElementById('edit-answer-audio-url').value.trim();
-            persistCase(c.day);
             renderAll();
             renderCaseModal(c.day);
-            toast(`Modifications de la Case ${c.day} enregistrées !`, "ok");
+            await persistCase(c.day, true);
         };
 
         window.adjustManualScore = function(teamIdx, delta) {
